@@ -14,6 +14,7 @@ class _CategoryExpensePieChartState extends State<CategoryExpensePieChart> {
   List<Map<String, dynamic>> _monthlyExpense = [];
   List<Map<String, dynamic>> _monthlyIncome = [];
   List<Map<String, dynamic>> _monthlyBudgetActual = [];
+  Map<String, dynamic> _expenseRemaining = {"TotalExpenses":0.0,"MaxSpend":0.0};
   bool isLoading = true;
 
   @override
@@ -56,6 +57,14 @@ class _CategoryExpensePieChartState extends State<CategoryExpensePieChart> {
       GROUP BY Category.Id
       ORDER BY Category.Name;
     ''');
+
+    _expenseRemaining = (await DatabaseHelper.select('''
+      SELECT 
+          SUM(CASE WHEN Amount >= 0 THEN Amount ELSE 0 END) AS MaxSpend,
+          ABS(SUM(CASE WHEN Amount < 0 THEN Amount ELSE 0 END)) AS TotalExpenses
+      FROM Expense
+      WHERE CAST(strftime('%Y', Date) AS INTEGER) = ${widget.date.year} AND CAST(strftime('%m', Date) AS INTEGER) = ${widget.date.month}
+    ''')).first;
 
     setState(() {
       isLoading = false;
@@ -116,6 +125,18 @@ class _CategoryExpensePieChartState extends State<CategoryExpensePieChart> {
       );
     });
 
+    final double totalExpenses = _expenseRemaining["TotalExpenses"];
+    final double maxSpend = _expenseRemaining["MaxSpend"];
+    double percentageUsed;
+    double percentageLeft;
+
+    percentageUsed = (totalExpenses / maxSpend) * 100;
+    if (totalExpenses > maxSpend) {
+      percentageLeft = 0;
+    } else {
+      percentageLeft = 100 - percentageUsed;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -130,95 +151,154 @@ class _CategoryExpensePieChartState extends State<CategoryExpensePieChart> {
         child: Column(
             spacing: 20,
             children: [
-              const Text(
-                  'Monthly Income/Outcome Trends',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)
-              ),
-              AspectRatio(
-                  aspectRatio: 16 / 11,
-                  child: LineChart(
-                      LineChartData(
-                          titlesData: FlTitlesData(
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true, // Keep the X-axis values
-                                reservedSize: 30,
-                                interval: 1,
-                                getTitlesWidget: (value, meta) {
-                                  int index = value.toInt();
-                                  if (index >= 0 && index < incMonths.length) {
-                                    return Text(incMonths[index], style: const TextStyle(fontSize: 9));
-                                  }
-                                  return const SizedBox.shrink();
-                                },
-                              ),
-                            ),
-                            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          ),
-                          borderData: FlBorderData(show: true, border: const Border(left: BorderSide(width: 20),right: BorderSide(width: 20))),
-                          lineBarsData: [
-                            LineChartBarData(
-                                spots: monthlyExpenseDataPoints,
-                                barWidth: 4,
-                                isStrokeCapRound: true,
-                                color: Colors.white,
-                                dotData: FlDotData(
-                                    show: true,
-                                    getDotPainter: (spot, percent, barData, index) {
-                                      return FlDotCirclePainter(
-                                          radius: 4,
-                                          color: Colors.blueGrey,
-                                          strokeWidth: 2,
-                                          strokeColor: Colors.black
-                                      );
-                                    }
-                                )
-                            ),
-                            LineChartBarData(
-                                spots: monthlyIncomeDataPoints,
-                                isCurved: true,
-                                barWidth: 4,
-                                isStrokeCapRound: true,
-                                color: Colors.green,
-                                dotData: FlDotData(
-                                    show: true,
-                                    getDotPainter: (spot, percent, barData, index) {
-                                      return FlDotCirclePainter(
-                                          radius: 4,
-                                          color: Colors.blueGrey,
-                                          strokeWidth: 2,
-                                          strokeColor: Colors.black
-                                      );
-                                    }
-                                )
-                            ),
-                            LineChartBarData(
-                                spots: monthlyOutcomeDataPoints,
-                                isCurved: true,
-                                barWidth: 4,
-                                isStrokeCapRound: true,
-                                color: Colors.red,
-                                dotData: FlDotData(
-                                    show: true,
-                                    getDotPainter: (spot, percent, barData, index) {
-                                      return FlDotCirclePainter(
-                                          radius: 4,
-                                          color: Colors.blueGrey,
-                                          strokeWidth: 2,
-                                          strokeColor: Colors.black
-                                      );
-                                    }
-                                )
-                            )
-                          ],
-                          extraLinesData: ExtraLinesData(
-                            horizontalLines: [
-                              HorizontalLine(y: 0, color: Colors.green, strokeWidth: 2),
-                            ],
+              Card(
+                child: Padding(
+                  padding: EdgeInsets.only(top: 20),
+                  child: Column(
+                    spacing: 20,
+                    children: [
+                      const Text(
+                          'Monthly Income/Outcome Trends',
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)
+                      ),
+                      AspectRatio(
+                          aspectRatio: 16 / 13,
+                          child: LineChart(
+                              LineChartData(
+                                  titlesData: FlTitlesData(
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true, // Keep the X-axis values
+                                        reservedSize: 30,
+                                        interval: 1,
+                                        getTitlesWidget: (value, meta) {
+                                          int index = value.toInt();
+                                          if (index >= 0 && index < incMonths.length) {
+                                            return Text(incMonths[index], style: const TextStyle(fontSize: 9));
+                                          }
+                                          return const SizedBox.shrink();
+                                        },
+                                      ),
+                                    ),
+                                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                  ),
+                                  borderData: FlBorderData(show: true, border: const Border(left: BorderSide(width: 20),right: BorderSide(width: 20))),
+                                  lineBarsData: [
+                                    LineChartBarData(
+                                        spots: monthlyExpenseDataPoints,
+                                        barWidth: 4,
+                                        isStrokeCapRound: true,
+                                        color: Colors.white,
+                                        dotData: FlDotData(
+                                            show: true,
+                                            getDotPainter: (spot, percent, barData, index) {
+                                              return FlDotCirclePainter(
+                                                  radius: 4,
+                                                  color: Colors.blueGrey,
+                                                  strokeWidth: 2,
+                                                  strokeColor: Colors.black
+                                              );
+                                            }
+                                        )
+                                    ),
+                                    LineChartBarData(
+                                        spots: monthlyIncomeDataPoints,
+                                        isCurved: true,
+                                        barWidth: 4,
+                                        isStrokeCapRound: true,
+                                        color: Colors.green,
+                                        dotData: FlDotData(
+                                            show: true,
+                                            getDotPainter: (spot, percent, barData, index) {
+                                              return FlDotCirclePainter(
+                                                  radius: 4,
+                                                  color: Colors.blueGrey,
+                                                  strokeWidth: 2,
+                                                  strokeColor: Colors.black
+                                              );
+                                            }
+                                        )
+                                    ),
+                                    LineChartBarData(
+                                        spots: monthlyOutcomeDataPoints,
+                                        isCurved: true,
+                                        barWidth: 4,
+                                        isStrokeCapRound: true,
+                                        color: Colors.red,
+                                        dotData: FlDotData(
+                                            show: true,
+                                            getDotPainter: (spot, percent, barData, index) {
+                                              return FlDotCirclePainter(
+                                                  radius: 4,
+                                                  color: Colors.blueGrey,
+                                                  strokeWidth: 2,
+                                                  strokeColor: Colors.black
+                                              );
+                                            }
+                                        )
+                                    )
+                                  ],
+                                  extraLinesData: ExtraLinesData(
+                                    horizontalLines: [
+                                      HorizontalLine(y: 0, color: Colors.green, strokeWidth: 2),
+                                    ],
+                                  )
+                              )
                           )
-                      )
-                  )
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Card(
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    spacing: 5,
+                    children: [
+                      const Text(
+                          'Expense vs Remaining Budget',
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)
+                      ),
+                      AspectRatio(
+                        aspectRatio: 16 / 10,
+                        child: PieChart(
+                          PieChartData(
+                              sections: [
+                                // Expenses Section
+                                PieChartSectionData(
+                                    color: Colors.red,
+                                    value: percentageUsed,
+                                    title: 'Expenses ${percentageUsed.toStringAsFixed(0)}%',
+                                    titleStyle: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                    radius: 100
+                                ),
+                                // Remaining Section
+                                PieChartSectionData(
+                                    color: Colors.green,
+                                    value: percentageLeft,
+                                    title: 'Rest ${percentageLeft.toStringAsFixed(0)}%',
+                                    titleStyle: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                    radius: 100
+                                ),
+                              ],
+                              sectionsSpace: 2,
+                              centerSpaceRadius: 0
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
               ),
               const Text(
                 'Budget vs Actuals by Category',

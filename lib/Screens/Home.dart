@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+//import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:intl/intl.dart';
 import 'package:local_auth/local_auth.dart';
 
@@ -20,6 +21,7 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  //bool _overlayEnabled = false;
 
   DateTime _selectedDate = DateTime.now();
   List<Expense> _expenses = [];
@@ -33,12 +35,46 @@ class _HomeState extends State<Home> {
     super.initState();
     DatabaseHelper.dailyBackup();
     _fetchExpenses();
+    //_checkOverlayPermission();
   }
 
   @override
   void dispose() {
     super.dispose();
   }
+
+  /*Future<void> _checkOverlayPermission() async {
+    final granted = await FlutterOverlayWindow.isPermissionGranted();
+    if (!granted) {
+      await FlutterOverlayWindow.requestPermission();
+    }
+    //_toggleOverlay();
+  }*/
+
+
+  /*Future<void> _toggleOverlay() async {
+    if (_overlayEnabled) {
+      // Hide overlay
+      await FlutterOverlayWindow.closeOverlay();
+    } else {
+      // Show overlay (the plugin might provide config for icon position, size, etc.)
+      await FlutterOverlayWindow.showOverlay(
+        overlayTitle: "My Overlay",
+        overlayContent: "Tap to return to MyApp",
+        height: 250,
+        width: 250,
+        enableDrag: true,
+        flag: OverlayFlag.focusPointer
+      );
+
+      FlutterOverlayWindow.overlayListener.listen((event) async {
+
+      });
+    }
+    setState(() {
+      _overlayEnabled = !_overlayEnabled;
+    });
+  }*/
 
 
   Future<void> _fetchExpenses({bool indicator = false}) async {
@@ -139,7 +175,7 @@ class _HomeState extends State<Home> {
             },
             itemBuilder: (BuildContext context) => [
               PopupMenuItem(value: 'Categories', child: Text('Categories')),
-              PopupMenuItem(value: 'Charts', child: Text('Charts')),
+              //PopupMenuItem(value: 'Charts', child: Text('Charts')),
               PopupMenuItem(value: 'Backup', child: Text('Backup')),
               PopupMenuItem(value: 'Restore', child: Text('Restore'))
             ]
@@ -270,9 +306,29 @@ class _HomeState extends State<Home> {
                         },
                         leading: Icon(Icons.calendar_month),
                         title: Text(DateFormat('MMMM').format(_selectedDate)),
-                        subtitle: Text(
-                            NumberFormat.decimalPatternDigits(locale: 'fr_fr', decimalDigits: 2,).format(monthResult),
-                            style: TextStyle(fontSize: 30,color: monthResult >= 0 ? Colors.green : Colors.red, fontWeight: FontWeight.w900)
+                        subtitle: Column(
+                          children: [
+                            Text(
+                                NumberFormat.decimalPatternDigits(locale: 'fr_fr', decimalDigits: 2,).format(monthResult),
+                                style: TextStyle(fontSize: 30,color: monthResult >= 0 ? Colors.green : Colors.red, fontWeight: FontWeight.w900)
+                            ),
+                            LinearProgressIndicator(
+                              value: -monthOutcome / (monthIncome == 0 ? 1 : monthIncome),
+                              backgroundColor: Colors.grey[200],
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                -monthOutcome > monthIncome ? Colors.red : Colors.green,
+                              ),
+                            ),
+                            Text(
+                              -monthOutcome > monthIncome
+                                  ? 'Over budget by ${((-monthOutcome / (monthIncome == 0 ? 1 : monthIncome)*100)-100).toStringAsFixed(2)}%'
+                                  : 'Remaining budget: ${(100-(-monthOutcome / (monthIncome == 0 ? 1 : monthIncome)*100)).toStringAsFixed(2)}%',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: -monthOutcome > monthIncome ? Colors.red : Colors.grey[700],
+                              ),
+                            )
+                          ],
                         ),
                         trailing: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -368,13 +424,33 @@ class _HomeState extends State<Home> {
           ]
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: "btn1",
-        onPressed: _isLoading ? null : () async {
-          var res = await Navigator.push(context, MaterialPageRoute(builder:(context)=>ExpenseState(_expenses)));
-          if(res == true) setState(() { });
-        },
-        child: const Icon(Icons.add)
+      floatingActionButton: Stack(
+        children: [
+          Positioned(
+              left: 16,
+              bottom: 0,
+              child: FloatingActionButton(
+                heroTag: "btn2",
+                onPressed: () {
+                  //_toggleOverlay();
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => CategoryExpensePieChart(_selectedDate)));
+                },
+                child: const Icon(Icons.show_chart),
+              )
+          ),
+          Positioned(
+            right: 16,
+            bottom: 0,
+            child: FloatingActionButton(
+                heroTag: "btn1",
+                onPressed: _isLoading ? null : () async {
+                  var res = await Navigator.push(context, MaterialPageRoute(builder:(context)=>ExpenseState(_expenses)));
+                  if(res == true) setState(() { });
+                },
+                child: const Icon(Icons.add)
+            )
+          )
+        ]
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(5.0),
@@ -409,7 +485,8 @@ class _HomeState extends State<Home> {
             ],
           )
         ),
-      )
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
