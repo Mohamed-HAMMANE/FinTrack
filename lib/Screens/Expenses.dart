@@ -119,23 +119,12 @@ class _ExpensesState extends State<ExpensesState> {
                     widget.expenses.remove(expense);
                   });
                   await Func.updateWidgetData(widget.expenses);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Expense deleted successfully.'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  Navigator.pop(context,true);
+                  Func.showToast('Expense deleted successfully.');
                 }
                 else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Cannot delete this expense !!!'),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
-                  Navigator.pop(context,false);
+                  Func.showToast('Cannot delete this expense !!!',type: 'error');
                 }
+                if(mounted) Navigator.pop(context,nbr == 1);
               },
               child: Text('Delete')
           ),

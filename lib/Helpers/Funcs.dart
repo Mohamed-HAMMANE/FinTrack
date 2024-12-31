@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:home_widget/home_widget.dart';
 
 import '../Models/Expense.dart';
@@ -8891,6 +8892,15 @@ class Func{
     Colors.orangeAccent.shade100,
     Colors.amber.shade100,
   ];
+
+  static Future<bool?> showToast(String message, {String type = 'success'}){
+    return Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      fontSize: 16.0,
+      backgroundColor: type == 'success' ? Colors.green : type == 'error' ? Colors.red : null
+    );
+  }
 
 
 }

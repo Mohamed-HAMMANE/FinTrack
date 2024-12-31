@@ -48,7 +48,8 @@ dependencies:
   collection: ^1.19.0
   home_widget: ^0.7.0
   fl_chart: ^0.70.0
-  flutter_overlay_window: ^0.4.5
+  #flutter_overlay_window: ^0.4.5
+  fluttertoast: ^8.2.10
 
 dev_dependencies:
   flutter_test:

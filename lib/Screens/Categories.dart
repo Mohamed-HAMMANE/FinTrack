@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
+import '../Helpers/Funcs.dart';
 import '../Models/Category.dart';
 import 'Category.dart';
 
@@ -130,23 +131,12 @@ class _CategoriesState extends State<CategoriesState> {
                 if(nbr == 1){
                   await _fetchCategories();
                   _somethingAdded = true;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Category deleted successfully.'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  Navigator.pop(context,true);
+                  Func.showToast('Category deleted successfully.');
                 }
                 else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Cannot delete this category !!!'),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
-                  Navigator.pop(context,false);
+                  Func.showToast('Cannot delete this category !!!',type: 'error');
                 }
+                if(mounted) Navigator.pop(context,nbr == 1);
               },
               child: Text('Delete')
           ),

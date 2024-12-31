@@ -8,6 +8,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path;
 import 'package:file_picker/file_picker.dart';
 
+import 'Funcs.dart';
+
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
 
@@ -112,30 +114,16 @@ class DatabaseHelper {
       final appDbPath = path.join(dbPath, '$_databaseName.db');
       final backupFile = File(backupFilePath);
       if (!(await backupFile.exists())) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Backup file not found in Downloads folder.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        Func.showToast('Backup file not found in Downloads folder.');
         return false;
       }
       await backupFile.copy(appDbPath);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Database restored successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+
+      Func.showToast('Database restored successfully!');
       return true;
     }
     else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No file selected.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      Func.showToast('No file selected.',type: 'error');
     }
     return false;
   }

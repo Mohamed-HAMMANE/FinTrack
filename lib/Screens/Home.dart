@@ -9,7 +9,7 @@ import '../Models/Category.dart';
 import '../Models/Expense.dart';
 import 'Categories.dart';
 import 'CategoryExpenses.dart';
-import 'Charts/CategoryExpensePieChart.dart';
+import 'Charts.dart';
 import 'Expense.dart';
 import 'Expenses.dart';
 
@@ -85,17 +85,7 @@ class _HomeState extends State<Home> {
       Func.updateWidgetData(_expenses);
     });
     if(indicator){
-      if(mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text('Refreshed successfully.'),
-                duration: const Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                backgroundColor: Colors.green
-            )
-        );
-      }
+      Func.showToast('Refreshed successfully.');
     }
   }
 
@@ -148,20 +138,10 @@ class _HomeState extends State<Home> {
             onSelected: (String result) async {
               if (result == 'Backup') {
                 if(await DatabaseHelper.backUp()){
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Downloaded successfully.'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  Func.showToast('Downloaded successfully.');
                 }
                 else{
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error on backup.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  Func.showToast('Error on backup.',type: 'error');
                 }
               } else if (result == 'Restore') {
                 DatabaseHelper.restore(context);
