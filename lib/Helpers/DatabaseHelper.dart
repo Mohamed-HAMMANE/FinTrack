@@ -88,7 +88,6 @@ class DatabaseHelper {
     return await db.rawQuery(query);
   }
 
-
   static Future<bool> backUp() async{
     try {
       final dbPath = await getDatabasesPath();
@@ -127,7 +126,6 @@ class DatabaseHelper {
     }
     return false;
   }
-
 
   static Future<void> dailyBackup() async {
     final now = DateTime.now();
