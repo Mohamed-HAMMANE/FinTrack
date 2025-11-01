@@ -56,7 +56,7 @@ flutter pub get
 flutter run
 
 # Build APK
-flutter build apk --release
+ flutter build apk --no-tree-shake-icons 
 ```
 
 ## Notes
