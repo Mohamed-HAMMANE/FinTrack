@@ -51,6 +51,10 @@ class _ExpenseState extends State<ExpenseState>
   // Budgeted amount from category.
   double _budget = 1; // Prevent division by zero error.
 
+  // Budget alert state
+  double _projectedActual = 0; // What actual will be after saving this expense
+  String _budgetWarningLevel = 'safe'; // 'safe', 'warning', 'alert', 'critical'
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +65,9 @@ class _ExpenseState extends State<ExpenseState>
     );
     _progressAnimation =
         Tween<double>(begin: 0, end: 1).animate(_animationController);
+
+    // Add listener to amount field for real-time budget warnings
+    _amountController.addListener(_calculateProjectedBudget);
 
     // Load categories, then initialize form fields if editing.
     _fetchCategories();
@@ -160,6 +167,126 @@ class _ExpenseState extends State<ExpenseState>
     _animationController.animateTo(ratio.toDouble());
   }
 
+  /// Calculates projected budget impact when user enters amount
+  void _calculateProjectedBudget() {
+    // Get current amount input (ignore if invalid)
+    final amountText = _amountController.text;
+    if (amountText.isEmpty || !Func.isNumeric(amountText)) {
+      setState(() {
+        _projectedActual = _actual;
+        _budgetWarningLevel = 'safe';
+      });
+      return;
+    }
+
+    final enteredAmount = double.parse(amountText);
+
+    // If this is income, it reduces actual spending
+    if (_isIncome) {
+      _projectedActual = (_actual - enteredAmount).clamp(0.0, double.infinity);
+    } else {
+      // If expense, add to actual spending
+      _projectedActual = _actual + enteredAmount;
+    }
+
+    // Determine warning level based on projected percentage
+    final percentage = (_budget == 0) ? 100 : (_projectedActual / _budget) * 100;
+
+    setState(() {
+      if (percentage >= 100) {
+        _budgetWarningLevel = 'critical';
+      } else if (percentage >= 90) {
+        _budgetWarningLevel = 'alert';
+      } else if (percentage >= 75) {
+        _budgetWarningLevel = 'warning';
+      } else {
+        _budgetWarningLevel = 'safe';
+      }
+    });
+  }
+
+  /// Get color based on warning level
+  Color _getBudgetWarningColor() {
+    switch (_budgetWarningLevel) {
+      case 'warning':
+        return Colors.orange.shade300;
+      case 'alert':
+        return Colors.orange.shade700;
+      case 'critical':
+        return Colors.red;
+      default:
+        return Colors.green;
+    }
+  }
+
+  /// Get icon based on warning level
+  IconData _getBudgetWarningIcon() {
+    switch (_budgetWarningLevel) {
+      case 'warning':
+        return Icons.warning_amber;
+      case 'alert':
+        return Icons.warning;
+      case 'critical':
+        return Icons.error;
+      default:
+        return Icons.check_circle;
+    }
+  }
+
+  /// Build warning banner for alert and critical states
+  Widget _buildBudgetWarningBanner() {
+    // Only show for alert and critical levels
+    if (_budgetWarningLevel != 'alert' && _budgetWarningLevel != 'critical') {
+      return const SizedBox.shrink();
+    }
+
+    final percentage = (_budget == 0) ? 100 : (_projectedActual / _budget) * 100;
+    final overage = _projectedActual - _budget;
+    final color = _getBudgetWarningColor();
+
+    return Card(
+      color: color.withValues(alpha: 0.1),
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 15),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          children: [
+            Icon(_getBudgetWarningIcon(), color: color, size: 32),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _budgetWarningLevel == 'critical'
+                        ? 'Budget Exceeded!'
+                        : 'Near Budget Limit!',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _budgetWarningLevel == 'critical'
+                        ? 'This will exceed budget by ${overage.toStringAsFixed(2)} DH (${percentage.toStringAsFixed(0)}%)'
+                        : 'This will use ${percentage.toStringAsFixed(0)}% of your monthly budget',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: color.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Format selected date for display.
@@ -191,6 +318,7 @@ class _ExpenseState extends State<ExpenseState>
                   setState(() {
                     _currentCategory = sel;
                     _updateProgressBar(); // Recompute on category change.
+                    _calculateProjectedBudget(); // Recalculate warnings for new category
                   });
                 },
                 decoration: const InputDecoration(
@@ -204,49 +332,81 @@ class _ExpenseState extends State<ExpenseState>
               AnimatedBuilder(
                 animation: _progressAnimation,
                 builder: (context, child) {
+                  // Use projected actual for display if amount is entered
+                  final displayActual = _projectedActual > 0 ? _projectedActual : _actual;
+                  final projectedRatio = (_budget == 0) ? 1.0 : (displayActual / _budget).clamp(0.0, 1.5).toDouble();
+                  final warningColor = _getBudgetWarningColor();
+
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Display numeric budget vs actual.
+                      // Display numeric budget vs actual with warning icon
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Budget: ${_budget.toStringAsFixed(2)}DH',
-                            style: const TextStyle(
-                                fontSize: 16, color: Colors.blueAccent),
+                          Row(
+                            children: [
+                              Text(
+                                'Budget: ${_budget.toStringAsFixed(2)}DH',
+                                style: const TextStyle(
+                                    fontSize: 16, color: Colors.blueAccent),
+                              ),
+                            ],
                           ),
-                          Text(
-                            'Actual: ${_actual.toStringAsFixed(2)}DH',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color:
-                              _actual > _budget ? Colors.red : Colors.green,
-                            ),
+                          Row(
+                            children: [
+                              if (_budgetWarningLevel != 'safe')
+                                Icon(_getBudgetWarningIcon(),
+                                    color: warningColor, size: 18),
+                              if (_budgetWarningLevel != 'safe')
+                                const SizedBox(width: 4),
+                              Text(
+                                'Actual: ${_actual.toStringAsFixed(2)}DH',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: _actual > _budget ? Colors.red : Colors.green,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
+
+                      // Show projected if different from actual
+                      if (_projectedActual > 0 && _projectedActual != _actual) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              'After this: ${_projectedActual.toStringAsFixed(2)}DH (${((_projectedActual / _budget) * 100).toStringAsFixed(0)}%)',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: warningColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+
                       const SizedBox(height: 5),
-                      // Visual progress bar.
+                      // Visual progress bar with warning colors
                       LinearProgressIndicator(
-                        value: _progressAnimation.value,
+                        value: projectedRatio > 1 ? 1 : projectedRatio,
                         minHeight: 8,
                         backgroundColor: Colors.grey[200],
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          _actual > _budget ? Colors.red : Colors.green,
-                        ),
+                        valueColor: AlwaysStoppedAnimation<Color>(warningColor),
                       ),
                       const SizedBox(height: 5),
-                      // Contextual message.
+                      // Contextual message
                       Text(
-                        _actual > _budget
-                            ? 'Over budget by ${( _actual - _budget ).toStringAsFixed(2)}DH'
-                            : 'Remaining budget: ${( _budget - _actual ).toStringAsFixed(2)}DH',
+                        displayActual > _budget
+                            ? 'Over budget by ${(displayActual - _budget).toStringAsFixed(2)}DH'
+                            : 'Remaining budget: ${(_budget - displayActual).toStringAsFixed(2)}DH',
                         style: TextStyle(
                           fontSize: 14,
-                          color: _actual > _budget
-                              ? Colors.red
-                              : Colors.green,
+                          color: warningColor,
                         ),
                       ),
                     ],
@@ -254,6 +414,9 @@ class _ExpenseState extends State<ExpenseState>
                 },
               ),
               const SizedBox(height: 15),
+
+              // ===================== Budget Warning Banner =====================
+              _buildBudgetWarningBanner(),
 
               // ===================== Amount Input =====================
               TextFormField(
@@ -303,7 +466,10 @@ class _ExpenseState extends State<ExpenseState>
                         Checkbox(
                           value: _isIncome,
                           onChanged: (bool? val) {
-                            setState(() => _isIncome = val ?? false);
+                            setState(() {
+                              _isIncome = val ?? false;
+                              _calculateProjectedBudget(); // Recalculate when income status changes
+                            });
                           },
                         ),
                         const Text('Income?'),
@@ -339,6 +505,13 @@ class _ExpenseState extends State<ExpenseState>
           onPressed: () async {
             // Validate inputs before saving.
             if (!_formKey.currentState!.validate()) return;
+
+            // Check if budget would be exceeded and confirm with user
+            if (_budgetWarningLevel == 'critical' && !_isIncome) {
+              final confirmed = await _confirmBudgetExceedance();
+              if (!confirmed) return; // User cancelled
+            }
+
             setState(() => _isLoading = true);
 
             // Construct new or updated expense object.
@@ -388,6 +561,40 @@ class _ExpenseState extends State<ExpenseState>
   Future<bool> onWillPop() {
     Navigator.of(context).pop(_somethingAdded);
     return Future.value(true);
+  }
+
+  /// Confirm with user before saving when budget would be exceeded
+  Future<bool> _confirmBudgetExceedance() async {
+    final overage = _projectedActual - _budget;
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.error, color: Colors.red, size: 28),
+            const SizedBox(width: 8),
+            const Text('Budget Exceeded'),
+          ],
+        ),
+        content: Text(
+          'This expense will exceed your monthly budget by ${overage.toStringAsFixed(2)} DH.\n\nDo you want to save it anyway?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Go Back'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Save Anyway'),
+          ),
+        ],
+      ),
+    ) ?? false;
   }
 
   /// Shows date picker and updates selected date.
