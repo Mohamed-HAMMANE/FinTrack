@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'dart:async';
-import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -125,25 +124,5 @@ class DatabaseHelper {
       Func.showToast('No file selected.',type: 'error');
     }
     return false;
-  }
-
-  static Future<void> dailyBackup() async {
-    final now = DateTime.now();
-    final eightPM = DateTime(now.year, now.month, now.day, 20, 0, 0);
-
-    DateTime firstRun = eightPM.isBefore(now)
-        ? eightPM.add(const Duration(days: 1))
-        : eightPM;
-
-    final initialDelay = firstRun.difference(now).inSeconds;
-
-    await AndroidAlarmManager.periodic(
-        const Duration(hours: 24),
-        159,
-        DatabaseHelper.backUp,
-        startAt: DateTime.now().add(Duration(seconds: initialDelay)),
-        wakeup: true,
-        exact: true
-    );
   }
 }

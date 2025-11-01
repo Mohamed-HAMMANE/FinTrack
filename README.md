@@ -1,6 +1,6 @@
 # fin_track
 
-A financial tracker app
+A new Flutter project.
 
 ## Getting Started
 

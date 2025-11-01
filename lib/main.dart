@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:flutter/material.dart';
 
@@ -8,20 +7,12 @@ import 'Screens/Home.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AndroidAlarmManager.initialize();
   runApp(
     EasyDynamicThemeWidget(
         child: const MyApp()
     ),
   );
 }
-
-/*void overlayMain() {
-  runApp(const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Material(child: Text("My overlay"))
-  ));
-}*/
 
 
 class MyApp extends StatelessWidget {

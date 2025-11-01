@@ -246,7 +246,7 @@ class _ExpenseState extends State<ExpenseState>
                           fontSize: 14,
                           color: _actual > _budget
                               ? Colors.red
-                              : Colors.black87,
+                              : Colors.green,
                         ),
                       ),
                     ],

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-//import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:intl/intl.dart';
 import 'package:local_auth/local_auth.dart';
 
@@ -21,7 +20,6 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  //bool _overlayEnabled = false;
 
   DateTime _selectedDate = DateTime.now();
   List<Expense> _expenses = [];
@@ -33,48 +31,13 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    DatabaseHelper.dailyBackup();
     _fetchExpenses();
-    //_checkOverlayPermission();
   }
 
   @override
   void dispose() {
     super.dispose();
   }
-
-  /*Future<void> _checkOverlayPermission() async {
-    final granted = await FlutterOverlayWindow.isPermissionGranted();
-    if (!granted) {
-      await FlutterOverlayWindow.requestPermission();
-    }
-    //_toggleOverlay();
-  }*/
-
-
-  /*Future<void> _toggleOverlay() async {
-    if (_overlayEnabled) {
-      // Hide overlay
-      await FlutterOverlayWindow.closeOverlay();
-    } else {
-      // Show overlay (the plugin might provide config for icon position, size, etc.)
-      await FlutterOverlayWindow.showOverlay(
-        overlayTitle: "My Overlay",
-        overlayContent: "Tap to return to MyApp",
-        height: 250,
-        width: 250,
-        enableDrag: true,
-        flag: OverlayFlag.focusPointer
-      );
-
-      FlutterOverlayWindow.overlayListener.listen((event) async {
-
-      });
-    }
-    setState(() {
-      _overlayEnabled = !_overlayEnabled;
-    });
-  }*/
 
 
   Future<void> _fetchExpenses({bool indicator = false}) async {
@@ -201,10 +164,7 @@ class _HomeState extends State<Home> {
                             try {
                               bool authenticated = await auth.authenticate(
                                 localizedReason: 'Please authenticate to see Saving amount',
-                                options: const AuthenticationOptions(
-                                  biometricOnly: true,
-                                  stickyAuth: true,
-                                ),
+                                biometricOnly: true
                               );
                               setState(() {
                                 _showSaving = authenticated;

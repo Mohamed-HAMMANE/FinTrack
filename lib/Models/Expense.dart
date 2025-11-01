@@ -44,50 +44,6 @@ class Expense{
     return result.map((row) => Expense.fromMap(row)).toList();
   }
 
-  /*static Future<double> getTotal() async {
-    final db = await DatabaseHelper.instance.database;
-    final result = await db.rawQuery("SELECT SUM(amount) as total FROM Expense");
-    return result.first["total"] == null ? 0.0 : double.parse(result.first["total"].toString());
-  }
-
-  static Future<double> getMonthly(DateTime date) async {
-    final db = await DatabaseHelper.instance.database;
-    final firstDay = DateTime(date.year, date.month, 1).toIso8601String();
-    final lastDay = DateTime(date.year, date.month + 1, 0).toIso8601String();
-
-    final result = await db.rawQuery("""
-      SELECT SUM(amount) as total 
-      FROM Expense 
-      WHERE date BETWEEN ? AND ?
-    """, [firstDay, lastDay]);
-
-    return result.first["total"] == null ? 0.0 : double.parse(result.first["total"].toString());
-  }
-
-  static Future<double> getDaySum(DateTime date) async {
-    final db = await DatabaseHelper.instance.database;
-    final day = DateTime(date.year, date.month, date.day).toIso8601String();
-
-    final result = await db.rawQuery("""
-      SELECT SUM(amount) as total 
-      FROM Expense 
-      WHERE date = ?
-    """, [day]);
-
-    return result.first["total"] == null ? 0.0 : double.parse(result.first["total"].toString());
-  }
-
-  static Future<List<Map<String, dynamic>>> getDayExpenses(DateTime date) async {
-    final db = await DatabaseHelper.instance.database;
-    final day = DateTime(date.year, date.month, date.day).toIso8601String();
-
-    return await db.rawQuery("""
-      SELECT * FROM Expense 
-      WHERE date = ?
-      ORDER BY date DESC
-    """, [day]);
-  }*/
-
   Future<int> insert() async {
     final db = await (DatabaseHelper.instance.database);
     id = await db.insert(
