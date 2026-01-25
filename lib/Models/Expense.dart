@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../Helpers/DatabaseHelper.dart';
@@ -21,7 +22,7 @@ class Expense {
   Map<String, Object?> toMap() {
     return {
       'Amount': amount,
-      'Date': date.toIso8601String(),
+      'Date': DateFormat('yyyy-MM-dd').format(date),
       'Comment': comment,
       'CategoryId': category.id,
     };
@@ -44,7 +45,7 @@ class Expense {
     final result = await DatabaseHelper.select('''
       SELECT ex.Id, ex.Amount, ex.Date, ex.Comment, ex.CategoryId, cat.Name CategoryName, cat.Budget CategoryBudget, cat.[Order] CategoryOrder, cat.IconCode CategoryIconCode
       FROM Expense ex INNER JOIN Category cat ON ex.CategoryId = cat.Id 
-      ORDER BY ex.[Date] DESC;
+      ORDER BY ex.[Date] DESC, ex.CreationDate DESC;
     ''');
     return result.map((row) => Expense.fromMap(row)).toList();
   }

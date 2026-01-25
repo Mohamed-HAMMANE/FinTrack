@@ -103,9 +103,12 @@ class _CategoryExpensePieChartState extends State<CategoryExpensePieChart> {
           Category.Name AS Category,
           Category.IconCode,
           ABS(Category.Budget) AS Budget,
-          IFNULL(SUM(ABS(Expense.Amount)), 0) AS Actual
-      FROM Category LEFT JOIN Expense ON Category.Id = Expense.CategoryId
-      WHERE CAST(strftime('%Y', Date) AS INTEGER) = ${widget.date.year} AND CAST(strftime('%m', Date) AS INTEGER) = ${widget.date.month} AND Category.Budget < 0
+          IFNULL(ABS(SUM(Expense.Amount)), 0) AS Actual
+      FROM Category 
+      LEFT JOIN Expense ON Category.Id = Expense.CategoryId 
+        AND CAST(strftime('%Y', Expense.Date) AS INTEGER) = ${widget.date.year} 
+        AND CAST(strftime('%m', Expense.Date) AS INTEGER) = ${widget.date.month}
+      WHERE Category.Budget != 0
       GROUP BY Category.Id
       ORDER BY Category.Name;
     ''');

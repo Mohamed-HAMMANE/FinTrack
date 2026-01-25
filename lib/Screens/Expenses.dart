@@ -27,9 +27,14 @@ class _ExpensesState extends State<ExpensesState> {
   DateTimeRange? _dateRange;
   String _amountFilter = 'all'; // 'all', 'income', 'expense'
 
+  // Local state for expenses (starts with passed list, can be expanded)
+  List<Expense> _allExpenses = [];
+  bool _isLoadingAll = false;
+
   @override
   void initState() {
     super.initState();
+    _allExpenses = widget.expenses;
     _loadCategories();
   }
 
@@ -38,6 +43,17 @@ class _ExpensesState extends State<ExpensesState> {
     setState(() {
       _categories = categories;
     });
+  }
+  
+  Future<void> _loadAllData() async {
+    setState(() => _isLoadingAll = true);
+    // Fetch all expenses from database
+    final all = await Expense.getAll();
+    setState(() {
+      _allExpenses = all;
+      _isLoadingAll = false;
+    });
+    Func.showToast('Full history loaded: ${all.length} items');
   }
 
   @override
@@ -48,7 +64,7 @@ class _ExpensesState extends State<ExpensesState> {
 
   // Enhanced filter: search text, categories, date range, amount type
   List<Expense> get _filteredExpenses {
-    var result = widget.expenses;
+    var result = _allExpenses;
 
     // 1) Search text filter (comment OR category name OR amount)
     if (_searchQuery.isNotEmpty) {
@@ -243,6 +259,14 @@ class _ExpensesState extends State<ExpensesState> {
 
   @override
   Widget build(BuildContext context) {
+    // If loading all data, show simple loader
+    if (_isLoadingAll) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Loading...')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    
     final filteredExpenses = _filteredExpenses;
     final groupedExpenses = groupBy<Expense, String>(
       filteredExpenses,
@@ -253,7 +277,17 @@ class _ExpensesState extends State<ExpensesState> {
     return WillPopScope(
       onWillPop: onWillPop,
       child: Scaffold(
-        appBar: AppBar(title: Text('Expenses ${widget.expenses.length}')),
+        appBar: AppBar(
+          title: Text('Expenses ${filteredExpenses.length}'), // Show count of filtered items
+          actions: [
+             // "Load All" button
+             IconButton(
+               icon: const Icon(Icons.sync_alt),
+               tooltip: 'Load Full History',
+               onPressed: _loadAllData,
+             )
+          ],
+        ),
         body: Column(
           children: [
             // ───── Search Bar ─────
@@ -326,7 +360,7 @@ class _ExpensesState extends State<ExpensesState> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Showing ${filteredExpenses.length} of ${widget.expenses.length} expenses',
+                        'Showing ${filteredExpenses.length} of ${_allExpenses.length} expenses',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,

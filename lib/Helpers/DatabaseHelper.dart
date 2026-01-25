@@ -6,6 +6,7 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path;
 import 'package:file_picker/file_picker.dart';
+import 'package:intl/intl.dart';
 
 import 'Funcs.dart';
 
@@ -49,7 +50,7 @@ class DatabaseHelper {
         Budget REAL NOT NULL,
         `Order` INTEGER NOT NULL,
         IconCode INTEGER NOT NULL DEFAULT 0,
-        CreationDate TEXT NOT NULL DEFAULT (datetime('now','utc'))
+        CreationDate TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
       );
     ''');
 
@@ -59,7 +60,7 @@ class DatabaseHelper {
         Amount REAL NOT NULL,
         Date TEXT NOT NULL,
         Comment TEXT,
-        CreationDate TEXT NOT NULL DEFAULT (datetime('now','utc')),
+        CreationDate TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
         CategoryId INTEGER NOT NULL,
         FOREIGN KEY (CategoryId) REFERENCES Category (Id) ON DELETE RESTRICT
       );
@@ -91,8 +92,8 @@ class DatabaseHelper {
     DateTime end,
   ) async {
     final db = await instance.database;
-    final startStr = start.toIso8601String();
-    final endStr = end.toIso8601String();
+    final startStr = DateFormat('yyyy-MM-dd').format(start);
+    final endStr = DateFormat('yyyy-MM-dd').format(end);
 
     return await db.rawQuery(
       '''
@@ -102,7 +103,7 @@ class DatabaseHelper {
       FROM Expense ex 
       INNER JOIN Category cat ON ex.CategoryId = cat.Id 
       WHERE ex.Date BETWEEN ? AND ?
-      ORDER BY ex.[Date] DESC
+      ORDER BY ex.[Date] DESC, ex.CreationDate DESC
     ''',
       [startStr, endStr],
     );
