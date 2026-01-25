@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../Helpers/Funcs.dart';
+import '../Helpers/AppIcons.dart';
 import '../Models/Category.dart';
 import 'IconSelectorScreen.dart';
 
@@ -106,9 +106,9 @@ class _CategoryState extends State<CategoryState> {
 
   Future<void> _selectIcon() async {
     final selectedIconName = await Navigator.push(context, MaterialPageRoute(builder: (context) => IconSelectorScreen()));
-    if (selectedIconName != null && Func.allIcons.containsKey(selectedIconName)) {
+    if (selectedIconName != null && AppIcons.allIcons.containsKey(selectedIconName)) {
       setState(() {
-        _icon = Func.allIcons[selectedIconName]!;
+        _icon = AppIcons.allIcons[selectedIconName]!;
       });
     }
   }

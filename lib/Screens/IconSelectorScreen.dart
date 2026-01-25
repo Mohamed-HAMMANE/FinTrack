@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../Helpers/Funcs.dart';
+import '../Helpers/AppIcons.dart';
 
 
 class IconSelectorScreen extends StatefulWidget {
@@ -18,16 +18,16 @@ class _IconSelectorScreenState extends State<IconSelectorScreen> {
   @override
   void initState() {
     super.initState();
-    _filteredIcons = Map.from(Func.allIcons);
+    _filteredIcons = Map.from(AppIcons.allIcons);
   }
 
   void _filterIcons(String query) {
     setState(() {
       if (query.isEmpty) {
-        _filteredIcons = Map.from(Func.allIcons);
+        _filteredIcons = Map.from(AppIcons.allIcons);
       } else {
         _filteredIcons = Map.fromEntries(
-          Func.allIcons.entries.where((entry) => entry.key.toLowerCase().contains(query.toLowerCase())),
+          AppIcons.allIcons.entries.where((entry) => entry.key.toLowerCase().contains(query.toLowerCase())),
         );
       }
     });
