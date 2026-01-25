@@ -23,7 +23,7 @@ class _ExpensesState extends State<ExpensesState> {
 
   // Filter state
   List<Category> _categories = [];
-  Set<int> _selectedCategoryIds = {};
+  final Set<int> _selectedCategoryIds = {};
   DateTimeRange? _dateRange;
   String _amountFilter = 'all'; // 'all', 'income', 'expense'
 
@@ -72,10 +72,16 @@ class _ExpensesState extends State<ExpensesState> {
     if (_dateRange != null) {
       result = result.where((exp) {
         final expDate = DateTime(exp.date.year, exp.date.month, exp.date.day);
-        final startDate = DateTime(_dateRange!.start.year,
-            _dateRange!.start.month, _dateRange!.start.day);
+        final startDate = DateTime(
+          _dateRange!.start.year,
+          _dateRange!.start.month,
+          _dateRange!.start.day,
+        );
         final endDate = DateTime(
-            _dateRange!.end.year, _dateRange!.end.month, _dateRange!.end.day);
+          _dateRange!.end.year,
+          _dateRange!.end.month,
+          _dateRange!.end.day,
+        );
         return (expDate.isAtSameMomentAs(startDate) ||
                 expDate.isAfter(startDate)) &&
             (expDate.isAtSameMomentAs(endDate) || expDate.isBefore(endDate));
@@ -161,9 +167,11 @@ class _ExpensesState extends State<ExpensesState> {
         children: [
           const Icon(Icons.calendar_today, size: 18),
           const SizedBox(width: 4),
-          Text(_dateRange == null
-              ? 'All Dates'
-              : '${DateFormat('dd/MM').format(_dateRange!.start)} - ${DateFormat('dd/MM').format(_dateRange!.end)}'),
+          Text(
+            _dateRange == null
+                ? 'All Dates'
+                : '${DateFormat('dd/MM').format(_dateRange!.start)} - ${DateFormat('dd/MM').format(_dateRange!.end)}',
+          ),
           if (_dateRange != null) ...[
             const SizedBox(width: 4),
             GestureDetector(
@@ -238,16 +246,14 @@ class _ExpensesState extends State<ExpensesState> {
     final filteredExpenses = _filteredExpenses;
     final groupedExpenses = groupBy<Expense, String>(
       filteredExpenses,
-          (exp) => DateFormat('EEEE dd/MM/yyyy').format(exp.date),
+      (exp) => DateFormat('EEEE dd/MM/yyyy').format(exp.date),
     );
     final groupedEntries = groupedExpenses.entries.toList();
 
     return WillPopScope(
       onWillPop: onWillPop,
       child: Scaffold(
-        appBar: AppBar(
-          title: Text('Expenses ${widget.expenses.length}'),
-        ),
+        appBar: AppBar(title: Text('Expenses ${widget.expenses.length}')),
         body: Column(
           children: [
             // ───── Search Bar ─────
@@ -336,7 +342,9 @@ class _ExpensesState extends State<ExpensesState> {
                       const Text(
                         'Total:',
                         style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         NumberFormat.decimalPatternDigits(
@@ -364,8 +372,10 @@ class _ExpensesState extends State<ExpensesState> {
                   ...groupedEntries.map((group) {
                     final date = group.key;
                     final expensesForDay = group.value;
-                    final sum = expensesForDay
-                        .fold(0.0, (sum, item) => sum + item.amount);
+                    final sum = expensesForDay.fold(
+                      0.0,
+                      (sum, item) => sum + item.amount,
+                    );
 
                     return SliverStickyHeader(
                       header: Container(
@@ -376,69 +386,62 @@ class _ExpensesState extends State<ExpensesState> {
                             Text(
                               '$date ',
                               style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
                             ),
                             Text(
-                              '(${NumberFormat.decimalPatternDigits(
-                                locale: 'fr_fr',
-                                decimalDigits: 2,
-                              ).format(sum)})',
+                              '(${NumberFormat.decimalPatternDigits(locale: 'fr_fr', decimalDigits: 2).format(sum)})',
                               style: TextStyle(
-                                  fontSize: 17,
-                                  color:
-                                  sum >= 0 ? Colors.green : Colors.red),
+                                fontSize: 17,
+                                color: sum >= 0 ? Colors.green : Colors.red,
+                              ),
                             ),
                           ],
                         ),
                       ),
                       sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                            final exp = expensesForDay[index];
-                            return Card(
-                              child: ListTile(
-                                onTap: () => _editExpense(exp),
-                                leading: Column(
-                                  mainAxisAlignment:
-                                  MainAxisAlignment.center,
-                                  children: [
-                                    Icon(exp.category.icon),
-                                    Text(
-                                      exp.category.name,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w900),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final exp = expensesForDay[index];
+                          return Card(
+                            child: ListTile(
+                              onTap: () => _editExpense(exp),
+                              leading: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(exp.category.icon),
+                                  Text(
+                                    exp.category.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
                                     ),
-                                  ],
-                                ),
-                                title: Text(
-                                  NumberFormat.decimalPatternDigits(
-                                    locale: 'fr_fr',
-                                    decimalDigits: 2,
-                                  ).format(exp.amount),
-                                  style: TextStyle(
-                                      fontSize: 18,
-                                      color: exp.amount >= 0
-                                          ? Colors.green
-                                          : Colors.red),
-                                ),
-                                subtitle: Text(exp.comment),
-                                trailing: IconButton(
-                                  onPressed: () =>
-                                      _deleteExpense(context, exp),
-                                  icon:
-                                  const Icon(Icons.delete_forever),
+                                  ),
+                                ],
+                              ),
+                              title: Text(
+                                NumberFormat.decimalPatternDigits(
+                                  locale: 'fr_fr',
+                                  decimalDigits: 2,
+                                ).format(exp.amount),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: exp.amount >= 0
+                                      ? Colors.green
+                                      : Colors.red,
                                 ),
                               ),
-                            );
-                          },
-                          childCount: expensesForDay.length,
-                        ),
+                              subtitle: Text(exp.comment),
+                              trailing: IconButton(
+                                onPressed: () => _deleteExpense(context, exp),
+                                icon: const Icon(Icons.delete_forever),
+                              ),
+                            ),
+                          );
+                        }, childCount: expensesForDay.length),
                       ),
                     );
                   }),
-                  const SliverToBoxAdapter(
-                      child: SizedBox(height: 100.0)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 100.0)),
                 ],
               ),
             ),
@@ -451,8 +454,7 @@ class _ExpensesState extends State<ExpensesState> {
             _somethingAdded = await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) =>
-                    ExpenseState(widget.expenses),
+                builder: (context) => ExpenseState(widget.expenses),
               ),
             );
             if (_somethingAdded == true) setState(() {});
@@ -471,25 +473,23 @@ class _ExpensesState extends State<ExpensesState> {
     _somethingAdded = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            ExpenseState(widget.expenses, expense: exp),
+        builder: (context) => ExpenseState(widget.expenses, expense: exp),
       ),
     );
     if (_somethingAdded == true) setState(() {});
   }
 
-  Future<bool> _deleteExpense(
-      BuildContext context, Expense expense) async {
+  Future<bool> _deleteExpense(BuildContext context, Expense expense) async {
     return await showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Expense'),
-        content:
-        Text('Are you sure you want to delete "${expense.comment}"?'),
+        content: Text('Are you sure you want to delete "${expense.comment}"?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () async {
               var nbr = await expense.delete();
@@ -501,8 +501,7 @@ class _ExpensesState extends State<ExpensesState> {
                 await Func.updateWidgetData(widget.expenses);
                 Func.showToast('Expense deleted successfully.');
               } else {
-                Func.showToast('Cannot delete this expense !!!',
-                    type: 'error');
+                Func.showToast('Cannot delete this expense !!!', type: 'error');
               }
               if (mounted) Navigator.pop(context, nbr == 1);
             },

@@ -4,10 +4,12 @@ import 'package:intl/intl.dart';
 import '../Helpers/Funcs.dart';
 import '../Models/Category.dart';
 import '../Models/Expense.dart';
+import '../Models/Shortcut.dart';
 
 class ExpenseState extends StatefulWidget {
   /// Optional expense being edited; null when adding a new one.
   final Expense? expense;
+
   /// Current list of all expenses for computing budget/actual.
   final List<Expense> expenses;
 
@@ -29,8 +31,9 @@ class _ExpenseState extends State<ExpenseState>
   // Controller for entering comments.
   final TextEditingController _commentController = TextEditingController();
   // Dropdown items for categories.
-  final List<DropdownMenuItem<Category>> _categoriesDropDown =
-  List.empty(growable: true);
+  final List<DropdownMenuItem<Category>> _categoriesDropDown = List.empty(
+    growable: true,
+  );
   // The category currently selected in the dropdown.
   late Category _currentCategory;
   // True if this entry is income (positive) rather than expense (negative).
@@ -63,8 +66,10 @@ class _ExpenseState extends State<ExpenseState>
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _progressAnimation =
-        Tween<double>(begin: 0, end: 1).animate(_animationController);
+    _progressAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(_animationController);
 
     // Add listener to amount field for real-time budget warnings
     _amountController.addListener(_calculateProjectedBudget);
@@ -114,8 +119,9 @@ class _ExpenseState extends State<ExpenseState>
 
     // If editing existing expense, pre-fill fields.
     if (widget.expense != null) {
-      _currentCategory = categories
-          .firstWhere((c) => c.id == widget.expense!.category.id);
+      _currentCategory = categories.firstWhere(
+        (c) => c.id == widget.expense!.category.id,
+      );
       final amt = widget.expense!.amount;
       if (amt < 0) {
         // For expenses, show positive value in input.
@@ -142,10 +148,12 @@ class _ExpenseState extends State<ExpenseState>
     // Use absolute value of budget to avoid negative budgets.
     _budget = _currentCategory.budget.abs();
     // Filter expenses to this category & month.
-    final items = widget.expenses.where((exp) =>
-    exp.category.id == _currentCategory.id &&
-        exp.date.year == _selectedDate.year &&
-        exp.date.month == _selectedDate.month);
+    final items = widget.expenses.where(
+      (exp) =>
+          exp.category.id == _currentCategory.id &&
+          exp.date.year == _selectedDate.year &&
+          exp.date.month == _selectedDate.month,
+    );
 
     // Sum only negative amounts (expenses) as positive spent.
     final spent = items
@@ -190,7 +198,9 @@ class _ExpenseState extends State<ExpenseState>
     }
 
     // Determine warning level based on projected percentage
-    final percentage = (_budget == 0) ? 100 : (_projectedActual / _budget) * 100;
+    final percentage = (_budget == 0)
+        ? 100
+        : (_projectedActual / _budget) * 100;
 
     setState(() {
       if (percentage >= 100) {
@@ -240,7 +250,9 @@ class _ExpenseState extends State<ExpenseState>
       return const SizedBox.shrink();
     }
 
-    final percentage = (_budget == 0) ? 100 : (_projectedActual / _budget) * 100;
+    final percentage = (_budget == 0)
+        ? 100
+        : (_projectedActual / _budget) * 100;
     final overage = _projectedActual - _budget;
     final color = _getBudgetWarningColor();
 
@@ -305,254 +317,327 @@ class _ExpenseState extends State<ExpenseState>
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              // ===================== Category Selector =====================
-              DropdownButtonFormField<Category>(
-                value: _currentCategory,
-                items: _categoriesDropDown,
-                onChanged: (Category? sel) {
-                  if (sel == null) return;
-                  setState(() {
-                    _currentCategory = sel;
-                    _updateProgressBar(); // Recompute on category change.
-                    _calculateProjectedBudget(); // Recalculate warnings for new category
-                  });
-                },
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Category',
-                ),
-              ),
-              const SizedBox(height: 15),
-
-              // ===================== Budget vs Actual Bar =====================
-              AnimatedBuilder(
-                animation: _progressAnimation,
-                builder: (context, child) {
-                  // Use projected actual for display if amount is entered
-                  final displayActual = _projectedActual > 0 ? _projectedActual : _actual;
-                  final projectedRatio = (_budget == 0) ? 1.0 : (displayActual / _budget).clamp(0.0, 1.5).toDouble();
-                  final warningColor = _getBudgetWarningColor();
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Display numeric budget vs actual with warning icon
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                'Budget: ${_budget.toStringAsFixed(2)}DH',
-                                style: const TextStyle(
-                                    fontSize: 16, color: Colors.blueAccent),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              if (_budgetWarningLevel != 'safe')
-                                Icon(_getBudgetWarningIcon(),
-                                    color: warningColor, size: 18),
-                              if (_budgetWarningLevel != 'safe')
-                                const SizedBox(width: 4),
-                              Text(
-                                'Actual: ${_actual.toStringAsFixed(2)}DH',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: _actual > _budget ? Colors.red : Colors.green,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                key: _formKey,
+                child: ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    // ===================== Category Selector =====================
+                    DropdownButtonFormField<Category>(
+                      initialValue: _currentCategory,
+                      items: _categoriesDropDown,
+                      onChanged: (Category? sel) {
+                        if (sel == null) return;
+                        setState(() {
+                          _currentCategory = sel;
+                          _updateProgressBar(); // Recompute on category change.
+                          _calculateProjectedBudget(); // Recalculate warnings for new category
+                        });
+                      },
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Category',
                       ),
+                    ),
+                    const SizedBox(height: 15),
 
-                      // Show projected if different from actual
-                      if (_projectedActual > 0 && _projectedActual != _actual) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                    // ===================== Budget vs Actual Bar =====================
+                    AnimatedBuilder(
+                      animation: _progressAnimation,
+                      builder: (context, child) {
+                        // Use projected actual for display if amount is entered
+                        final displayActual = _projectedActual > 0
+                            ? _projectedActual
+                            : _actual;
+                        final projectedRatio = (_budget == 0)
+                            ? 1.0
+                            : (displayActual / _budget)
+                                  .clamp(0.0, 1.5)
+                                  .toDouble();
+                        final warningColor = _getBudgetWarningColor();
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Display numeric budget vs actual with warning icon
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Budget: ${_budget.toStringAsFixed(2)}DH',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.blueAccent,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    if (_budgetWarningLevel != 'safe')
+                                      Icon(
+                                        _getBudgetWarningIcon(),
+                                        color: warningColor,
+                                        size: 18,
+                                      ),
+                                    if (_budgetWarningLevel != 'safe')
+                                      const SizedBox(width: 4),
+                                    Text(
+                                      'Actual: ${_actual.toStringAsFixed(2)}DH',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: _actual > _budget
+                                            ? Colors.red
+                                            : Colors.green,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+
+                            // Show projected if different from actual
+                            if (_projectedActual > 0 &&
+                                _projectedActual != _actual) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    'After this: ${_projectedActual.toStringAsFixed(2)}DH (${((_projectedActual / _budget) * 100).toStringAsFixed(0)}%)',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: warningColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+
+                            const SizedBox(height: 5),
+                            // Visual progress bar with warning colors
+                            LinearProgressIndicator(
+                              value: projectedRatio > 1 ? 1 : projectedRatio,
+                              minHeight: 8,
+                              backgroundColor: Colors.grey[200],
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                warningColor,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            // Contextual message
                             Text(
-                              'After this: ${_projectedActual.toStringAsFixed(2)}DH (${((_projectedActual / _budget) * 100).toStringAsFixed(0)}%)',
+                              displayActual > _budget
+                                  ? 'Over budget by ${(displayActual - _budget).toStringAsFixed(2)}DH'
+                                  : 'Remaining budget: ${(_budget - displayActual).toStringAsFixed(2)}DH',
                               style: TextStyle(
                                 fontSize: 14,
-                                fontWeight: FontWeight.bold,
                                 color: warningColor,
                               ),
                             ),
                           ],
-                        ),
-                      ],
-
-                      const SizedBox(height: 5),
-                      // Visual progress bar with warning colors
-                      LinearProgressIndicator(
-                        value: projectedRatio > 1 ? 1 : projectedRatio,
-                        minHeight: 8,
-                        backgroundColor: Colors.grey[200],
-                        valueColor: AlwaysStoppedAnimation<Color>(warningColor),
-                      ),
-                      const SizedBox(height: 5),
-                      // Contextual message
-                      Text(
-                        displayActual > _budget
-                            ? 'Over budget by ${(displayActual - _budget).toStringAsFixed(2)}DH'
-                            : 'Remaining budget: ${(_budget - displayActual).toStringAsFixed(2)}DH',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: warningColor,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 15),
-
-              // ===================== Budget Warning Banner =====================
-              _buildBudgetWarningBanner(),
-
-              // ===================== Amount Input =====================
-              TextFormField(
-                controller: _amountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Amount',
-                  suffixIcon: Icon(Icons.numbers),
-                  hintText: 'Enter amount',
-                ),
-                validator: (value) {
-                  if (!Func.isNumeric(value)) {
-                    return 'Required field';
-                  } else if (double.parse(value!) <= 0) {
-                    return 'Must be greater than 0';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 15),
-
-              // ===================== Comment Input =====================
-              TextFormField(
-                controller: _commentController,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Comment',
-                  suffixIcon: Icon(Icons.message),
-                  hintText: 'Enter comment',
-                ),
-                validator: (value) =>
-                Func.isNull(value) ? 'Required field' : null,
-                minLines: 2,
-                maxLines: 5,
-              ),
-              const SizedBox(height: 15),
-
-              // ===================== Income Checkbox & Date Picker =====================
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: _isIncome,
-                          onChanged: (bool? val) {
-                            setState(() {
-                              _isIncome = val ?? false;
-                              _calculateProjectedBudget(); // Recalculate when income status changes
-                            });
-                          },
-                        ),
-                        const Text('Income?'),
-                      ],
+                        );
+                      },
                     ),
-                    ElevatedButton(
-                      onPressed: () => _pickDate(context),
-                      child: Row(
+                    const SizedBox(height: 15),
+
+                    // ===================== Budget Warning Banner =====================
+                    _buildBudgetWarningBanner(),
+
+                    // ===================== Amount Input =====================
+                    TextFormField(
+                      controller: _amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Amount',
+                        suffixIcon: Icon(Icons.numbers),
+                        hintText: 'Enter amount',
+                      ),
+                      validator: (value) {
+                        if (!Func.isNumeric(value)) {
+                          return 'Required field';
+                        } else if (double.parse(value!) <= 0) {
+                          return 'Must be greater than 0';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 15),
+
+                    // ===================== Comment Input =====================
+                    TextFormField(
+                      controller: _commentController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Comment',
+                        suffixIcon: Icon(Icons.message),
+                        hintText: 'Enter comment',
+                      ),
+                      validator: (value) =>
+                          Func.isNull(value) ? 'Required field' : null,
+                      minLines: 2,
+                      maxLines: 5,
+                    ),
+                    const SizedBox(height: 15),
+
+                    // ===================== Income Checkbox & Date Picker =====================
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Icon(Icons.calendar_month),
-                          const SizedBox(width: 5),
-                          Text(
-                            formattedDate,
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+                          Row(
+                            children: [
+                              Checkbox(
+                                value: _isIncome,
+                                onChanged: (bool? val) {
+                                  setState(() {
+                                    _isIncome = val ?? false;
+                                    _calculateProjectedBudget(); // Recalculate when income status changes
+                                  });
+                                },
+                              ),
+                              const Text('Income?'),
+                            ],
+                          ),
+                          ElevatedButton(
+                            onPressed: () => _pickDate(context),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.calendar_month),
+                                const SizedBox(width: 5),
+                                Text(
+                                  formattedDate,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(height: 20),
+
+                    // ===================== Contextual Shortcuts =====================
+                    Builder(
+                      builder: (context) {
+                        final shortcuts = Shortcut.defaults
+                            .where((s) => s.categoryName.toLowerCase() == _currentCategory.name.toLowerCase())
+                            .toList();
+
+                        if (shortcuts.isEmpty) return const SizedBox.shrink();
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Quick Shortcuts for ${_currentCategory.name}:',
+                              style: TextStyle(
+                                fontSize: 14, 
+                                fontWeight: FontWeight.bold, 
+                                color: Colors.grey.shade600
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: shortcuts.map((s) {
+                                return ActionChip(
+                                  label: Text('${s.comment} (${NumberFormat.decimalPatternDigits(locale: 'fr_fr', decimalDigits: 2).format(s.amount.abs())})'),
+                                  avatar: CircleAvatar(
+                                    backgroundColor: Colors.blue.shade100,
+                                    radius: 10,
+                                    child: Text(s.categoryName[0], style: const TextStyle(fontSize: 10, color: Colors.black)),
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _amountController.text = s.amount.abs().toString();
+                                      _commentController.text = s.comment;
+                                      // Auto-set income checkbox based on sign
+                                      _isIncome = s.amount > 0;
+                                      
+                                      // Trigger budget calculations
+                                      _calculateProjectedBudget();
+                                    });
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        );
+                      }
+                    ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
         // ===================== Validate / Save Button =====================
         floatingActionButton: _isLoading
             ? const SizedBox()
             : FloatingActionButton.extended(
-          heroTag: 'btn1',
-          icon: const Icon(Icons.check),
-          label: Text(widget.expense == null ? 'Add' : 'Update'),
-          onPressed: () async {
-            // Validate inputs before saving.
-            if (!_formKey.currentState!.validate()) return;
+                heroTag: 'btn1',
+                icon: const Icon(Icons.check),
+                label: Text(widget.expense == null ? 'Add' : 'Update'),
+                onPressed: () async {
+                  // Validate inputs before saving.
+                  if (!_formKey.currentState!.validate()) return;
 
-            // Check if budget would be exceeded and confirm with user
-            if (_budgetWarningLevel == 'critical' && !_isIncome) {
-              final confirmed = await _confirmBudgetExceedance();
-              if (!confirmed) return; // User cancelled
-            }
+                  // Check if budget would be exceeded and confirm with user
+                  if (_budgetWarningLevel == 'critical' && !_isIncome) {
+                    final confirmed = await _confirmBudgetExceedance();
+                    if (!confirmed) return; // User cancelled
+                  }
 
-            setState(() => _isLoading = true);
+                  setState(() => _isLoading = true);
 
-            // Construct new or updated expense object.
-            final amt = double.parse(_amountController.text) *
-                (_isIncome ? 1 : -1);
-            final newExp = Expense(
-              id: widget.expense?.id ?? 0,
-              amount: amt,
-              date: _selectedDate,
-              comment: _commentController.text,
-              category: _currentCategory,
-            );
+                  // Construct new or updated expense object.
+                  final amt =
+                      double.parse(_amountController.text) *
+                      (_isIncome ? 1 : -1);
+                  final newExp = Expense(
+                    id: widget.expense?.id ?? 0,
+                    amount: amt,
+                    date: _selectedDate,
+                    comment: _commentController.text.trim(),
+                    category: _currentCategory,
+                  );
 
-            await newExp.save(); // Persist to database.
-            if (widget.expense == null) {
-              widget.expenses.insert(0, newExp); // Add new.
-            } else {
-              // Update existing in list for real-time UI.
-              widget.expense!
-                ..amount = newExp.amount
-                ..date = newExp.date
-                ..comment = newExp.comment
-                ..category = newExp.category;
-            }
+                  await newExp.save(); // Persist to database.
+                  if (widget.expense == null) {
+                    widget.expenses.insert(0, newExp); // Add new.
+                  } else {
+                    // Update existing in list for real-time UI.
+                    widget.expense!
+                      ..amount = newExp.amount
+                      ..date = newExp.date
+                      ..comment = newExp.comment
+                      ..category = newExp.category;
+                  }
 
-            // Clear inputs and signal parent to refresh.
-            _amountController.clear();
-            _commentController.clear();
-            _somethingAdded = true;
+                  // Clear inputs and signal parent to refresh.
+                  _amountController.clear();
+                  _commentController.clear();
+                  _somethingAdded = true;
 
-            await Func.updateWidgetData(widget.expenses);
-            Func.showToast(
-                widget.expense == null ? 'Added successfully' : 'Updated successfully');
+                  await Func.updateWidgetData(widget.expenses);
+                  Func.showToast(
+                    widget.expense == null
+                        ? 'Added successfully'
+                        : 'Updated successfully',
+                  );
 
-            // Refresh progress bar and form state.
-            _updateProgressBar();
-            setState(() => _isLoading = false);
-          },
-        ),
-        floatingActionButtonLocation:
-        FloatingActionButtonLocation.miniEndFloat,
+                  // Refresh progress bar and form state.
+                  _updateProgressBar();
+                  setState(() => _isLoading = false);
+                },
+              ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
       ),
     );
   }
@@ -567,34 +652,35 @@ class _ExpenseState extends State<ExpenseState>
   Future<bool> _confirmBudgetExceedance() async {
     final overage = _projectedActual - _budget;
     return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.error, color: Colors.red, size: 28),
-            const SizedBox(width: 8),
-            const Text('Budget Exceeded'),
-          ],
-        ),
-        content: Text(
-          'This expense will exceed your monthly budget by ${overage.toStringAsFixed(2)} DH.\n\nDo you want to save it anyway?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Go Back'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.error, color: Colors.red, size: 28),
+                const SizedBox(width: 8),
+                const Text('Budget Exceeded'),
+              ],
             ),
-            child: const Text('Save Anyway'),
+            content: Text(
+              'This expense will exceed your monthly budget by ${overage.toStringAsFixed(2)} DH.\n\nDo you want to save it anyway?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Go Back'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Save Anyway'),
+              ),
+            ],
           ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 
   /// Shows date picker and updates selected date.
