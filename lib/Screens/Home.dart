@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:local_auth/local_auth.dart';
 
-import '../Helpers/DatabaseHelper.dart';
 import '../Helpers/Funcs.dart';
 import '../Models/Category.dart';
 import '../Models/Expense.dart';
-import 'Categories.dart';
 import 'CategoryExpenses.dart';
 import 'Charts.dart';
 import 'Expense.dart';
@@ -28,8 +26,107 @@ class _HomeState extends State<Home> {
   bool _isLoading = true;
   bool _showSaving = false;
   bool _isSyncing = false;
+  int _selectedIndex = 0;
 
   final LocalAuthentication auth = LocalAuthentication();
+
+  Widget _buildGradientCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required List<Color> gradient,
+    VoidCallback? onTap,
+    VoidCallback? onLongPress,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: Container(
+        margin: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: gradient,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: gradient.last.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: Colors.white.withOpacity(0.2), width: 0.5),
+        ),
+        child: Stack(
+          children: [
+            // Subtle dark overlay to improve text contrast
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.08),
+                      Colors.black.withOpacity(0.25),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Icon(
+                        icon,
+                        color: Colors.white.withOpacity(0.6),
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      value,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black26,
+                            offset: Offset(0, 1),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -152,13 +249,15 @@ class _HomeState extends State<Home> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          spacing: 10,
-          children: [
-            Image.asset('assets/big_icon.png', height: 40),
-            Text("FinTrack"),
-          ],
-        ),
+        title: _selectedIndex == 0
+            ? Row(
+                spacing: 10,
+                children: [
+                  Image.asset('assets/big_icon.png', height: 40),
+                  Text("FinTrack"),
+                ],
+              )
+            : Text(_selectedIndex == 1 ? "Analytics" : "Settings"),
         actions: [
           IconButton(
             onPressed: _isSyncing ? null : _handleQuickSync,
@@ -176,51 +275,29 @@ class _HomeState extends State<Home> {
           ),
           PopupMenuButton<String>(
             onSelected: (String result) async {
-              if (result == 'Backup') {
-                if (await DatabaseHelper.backUp()) {
-                  Func.showToast('Downloaded successfully.');
-                } else {
-                  Func.showToast('Error on backup.', type: 'error');
-                }
-              } else if (result == 'Restore') {
-                DatabaseHelper.restore(context);
-              } else if (result == 'Categories') {
-                var res = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => CategoriesState()),
-                );
-                if (res == true) _fetchExpenses();
-              } else if (result == 'Charts') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        CategoryExpensePieChart(_selectedDate),
-                  ),
-                );
-              } else if (result == 'Sync') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const Settings()),
-                );
+              if (result == 'Sync') {
+                setState(() => _selectedIndex = 2);
               }
             },
             itemBuilder: (BuildContext context) => [
-              PopupMenuItem(value: 'Categories', child: Text('Categories')),
-              //PopupMenuItem(value: 'Charts', child: Text('Charts')),
-              PopupMenuItem(value: 'Sync', child: Text('Cloud Sync')),
-              PopupMenuItem(value: 'Backup', child: Text('Local Backup')),
-              PopupMenuItem(value: 'Restore', child: Text('Local Restore')),
+              const PopupMenuItem(
+                value: 'Sync',
+                child: Text('Settings & Sync'),
+              ),
             ],
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () => _fetchExpenses(indicator: true),
-        triggerMode: RefreshIndicatorTriggerMode.anywhere,
-        child: _isLoading
-            ? Center(child: Text("No data ..."))
-            : ListView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _selectedIndex == 1
+          ? CategoryExpensePieChart(_selectedDate, isSubView: true)
+          : _selectedIndex == 2
+          ? const Settings(isSubView: true)
+          : RefreshIndicator(
+              onRefresh: () => _fetchExpenses(indicator: true),
+              triggerMode: RefreshIndicatorTriggerMode.anywhere,
+              child: ListView(
                 children: [
                   GridView.count(
                     physics: const ScrollPhysics(),
@@ -228,135 +305,171 @@ class _HomeState extends State<Home> {
                     crossAxisCount: 2,
                     shrinkWrap: true,
                     children: [
-                      Card(
-                        child: ListTile(
-                          onTap: () async {
-                            var res = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ExpensesState(_expenses),
-                              ),
-                            );
-                            if (res == true) setState(() {});
-                          },
-                          leading: Icon(Icons.all_inclusive),
-                          title: const Text("Result"),
-                          subtitle: Text(
-                            NumberFormat.decimalPatternDigits(
-                              locale: 'fr_fr',
-                              decimalDigits: 2,
-                            ).format(total),
-                            style: TextStyle(
-                              fontSize: 20,
-                              color: total >= 0 ? Colors.green : Colors.red,
+                      _buildGradientCard(
+                        title: "Result",
+                        value: NumberFormat.decimalPatternDigits(
+                          locale: 'fr_fr',
+                          decimalDigits: 2,
+                        ).format(total),
+                        icon: Icons.account_balance_wallet,
+                        gradient: [
+                          const Color(0xFF6A11CB),
+                          const Color(0xFF2575FC),
+                        ],
+                        onTap: () async {
+                          var res = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ExpensesState(_expenses),
                             ),
-                          ),
-                        ),
+                          );
+                          if (res == true) setState(() {});
+                        },
                       ),
-                      Card(
-                        child: ListTile(
-                          onLongPress: () async {
-                            if (_showSaving) {
-                              var res = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      ExpensesState(savingExpenses.toList()),
-                                ),
+                      _buildGradientCard(
+                        title: "Saving",
+                        value: _showSaving
+                            ? NumberFormat.decimalPatternDigits(
+                                locale: 'fr_fr',
+                                decimalDigits: 2,
+                              ).format(savings)
+                            : '********',
+                        icon: Icons.savings,
+                        gradient: [
+                          const Color(0xFFE94057),
+                          const Color(0xFFF27121),
+                        ],
+                        onTap: () async {
+                          if (!_showSaving) {
+                            try {
+                              bool authenticated = await auth.authenticate(
+                                localizedReason:
+                                    'Please authenticate to see Saving amount',
+                                biometricOnly: true,
                               );
-                              if (res == true) setState(() {});
-                            }
-                          },
-                          onTap: () async {
-                            if (!_showSaving) {
-                              try {
-                                bool authenticated = await auth.authenticate(
-                                  localizedReason:
-                                      'Please authenticate to see Saving amount',
-                                  biometricOnly: true,
-                                );
-                                setState(() {
-                                  _showSaving = authenticated;
-                                });
-                              } catch (e) {
-                                //print('Authentication error: $e');
-                              }
-                            } else {
                               setState(() {
-                                _showSaving = !_showSaving;
+                                _showSaving = authenticated;
                               });
-                            }
-                          },
-                          leading: const Icon(
-                            Icons.savings,
-                            color: Colors.orange,
-                          ),
-                          title: const Text("Saving"),
-                          subtitle: Text(
-                            _showSaving
-                                ? NumberFormat.decimalPatternDigits(
-                                    locale: 'fr_fr',
-                                    decimalDigits: 2,
-                                  ).format(savings)
-                                : '********',
-                            style: TextStyle(
-                              fontSize: 20,
-                              color: savings >= 0 ? Colors.green : Colors.red,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Card(
-                        child: ListTile(
-                          onTap: () async {
+                            } catch (e) {}
+                          } else {
+                            setState(() {
+                              _showSaving = !_showSaving;
+                            });
+                          }
+                        },
+                        onLongPress: () async {
+                          if (_showSaving) {
                             var res = await Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => ExpensesState(
-                                  _expenses
-                                      .where((exp) => exp.amount > 0)
-                                      .toList(),
-                                ),
+                                builder: (context) =>
+                                    ExpensesState(savingExpenses.toList()),
                               ),
                             );
                             if (res == true) setState(() {});
-                          },
-                          leading: const Icon(
-                            Icons.download,
-                            color: Colors.green,
-                          ),
-                          title: const Text("Income"),
-                          subtitle: Text(
-                            NumberFormat.decimalPatternDigits(
-                              locale: 'fr_fr',
-                              decimalDigits: 2,
-                            ).format(income),
-                            style: TextStyle(
-                              fontSize: 20,
-                              color: income >= 0 ? Colors.green : Colors.red,
-                            ),
-                          ),
-                        ),
+                          }
+                        },
                       ),
-                      Card(
-                        child: ListTile(
-                          leading: const Icon(Icons.upload, color: Colors.red),
-                          title: const Text("Outcome"),
-                          subtitle: Text(
-                            NumberFormat.decimalPatternDigits(
-                              locale: 'fr_fr',
-                              decimalDigits: 2,
-                            ).format(outcome),
-                            style: TextStyle(
-                              fontSize: 20,
-                              color: outcome >= 0 ? Colors.green : Colors.red,
+                      _buildGradientCard(
+                        title: "Income",
+                        value: NumberFormat.decimalPatternDigits(
+                          locale: 'fr_fr',
+                          decimalDigits: 2,
+                        ).format(income),
+                        icon: Icons.trending_up,
+                        gradient: [
+                          const Color(0xFF0BA360),
+                          const Color(0xFF3CBA92),
+                        ],
+                        onTap: () async {
+                          var res = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ExpensesState(
+                                _expenses
+                                    .where((exp) => exp.amount > 0)
+                                    .toList(),
+                              ),
                             ),
-                          ),
-                        ),
+                          );
+                          if (res == true) setState(() {});
+                        },
+                      ),
+                      _buildGradientCard(
+                        title: "Outcome",
+                        value: NumberFormat.decimalPatternDigits(
+                          locale: 'fr_fr',
+                          decimalDigits: 2,
+                        ).format(outcome),
+                        icon: Icons.trending_down,
+                        gradient: [
+                          const Color(0xFFED213A),
+                          const Color(0xFF93291E),
+                        ],
                       ),
                     ],
                   ),
-                  Divider(color: Colors.blue),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                    child: Divider(),
+                  ),
+                  // Date Switcher Header
+                  Container(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 0,
+                    ),
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.1),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          onPressed: _goBackOneDay,
+                          icon: const Icon(Icons.chevron_left, size: 20),
+                        ),
+                        InkWell(
+                          onTap: () => _pickDate(context),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.calendar_today, size: 14),
+                                const SizedBox(width: 8),
+                                Text(
+                                  formattedDate,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          onPressed: _goForwardOneDay,
+                          icon: const Icon(Icons.chevron_right, size: 20),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                    child: Divider(),
+                  ),
                   Card(
                     key: ValueKey(1),
                     child: Dismissible(
@@ -596,118 +709,82 @@ class _HomeState extends State<Home> {
                   const SizedBox(height: 70),
                 ],
               ),
-      ),
-      floatingActionButton: Stack(
-        children: [
-          Positioned(
-            left: 16,
-            bottom: 0,
-            child: FloatingActionButton(
-              heroTag: "btn2",
-              onPressed: () {
-                //_toggleOverlay();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        CategoryExpensePieChart(_selectedDate),
+            ),
+      floatingActionButton: _selectedIndex != 0
+          ? null
+          : Stack(
+              children: [
+                Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: FloatingActionButton(
+                    heroTag: "btn1",
+                    onPressed: _isLoading
+                        ? null
+                        : () async {
+                            var res = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ExpenseState(_expenses),
+                              ),
+                            );
+                            if (res == true) setState(() {});
+                          },
+                    child: const Icon(Icons.add),
                   ),
-                );
-              },
-              child: const Icon(Icons.show_chart),
+                ),
+                Positioned(
+                  right: 16,
+                  bottom: 86,
+                  child: FloatingActionButton(
+                    heroTag: "btn_quick",
+                    mini: true,
+                    backgroundColor: Colors.amber,
+                    onPressed: _isLoading
+                        ? null
+                        : () async {
+                            var res = await showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (context) => const QuickAddSheet(),
+                            );
+                            if (res == true) _fetchExpenses(indicator: true);
+                          },
+                    child: const Icon(Icons.flash_on, color: Colors.black),
+                  ),
+                ),
+              ],
             ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_outlined),
+            activeIcon: Icon(Icons.dashboard),
+            label: 'Home',
           ),
-          Positioned(
-            right: 16,
-            bottom: 70, // Positioned above the Add button
-            child: FloatingActionButton(
-              heroTag: "btn_quick",
-              mini: true,
-              backgroundColor: Colors.amber,
-              onPressed: _isLoading
-                  ? null
-                  : () async {
-                      var res = await showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        builder: (context) => const QuickAddSheet(),
-                      );
-                      if (res == true) _fetchExpenses(indicator: true);
-                    },
-              child: const Icon(Icons.flash_on, color: Colors.black),
-            ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.pie_chart_outline),
+            activeIcon: Icon(Icons.pie_chart),
+            label: 'Analytics',
           ),
-          Positioned(
-            right: 16,
-            bottom: 0,
-            child: FloatingActionButton(
-              heroTag: "btn1",
-              onPressed: _isLoading
-                  ? null
-                  : () async {
-                      var res = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ExpenseState(_expenses),
-                        ),
-                      );
-                      if (res == true) setState(() {});
-                    },
-              child: const Icon(Icons.add),
-            ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined),
+            activeIcon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(5.0),
-        child: Card(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              ElevatedButton(
-                onPressed: _goBackOneDay,
-                style: ButtonStyle(
-                  side: WidgetStateProperty.all(
-                    BorderSide(color: Colors.white),
-                  ),
-                ),
-                child: Icon(Icons.exposure_minus_1),
-              ),
-              ElevatedButton(
-                onPressed: () => _pickDate(context),
-                style: ButtonStyle(
-                  side: WidgetStateProperty.all(
-                    BorderSide(color: Colors.white),
-                  ),
-                ),
-                child: Row(
-                  spacing: 5,
-                  children: [
-                    Icon(Icons.calendar_month),
-                    Text(
-                      formattedDate,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              ElevatedButton(
-                onPressed: _goForwardOneDay,
-                style: ButtonStyle(
-                  side: WidgetStateProperty.all(
-                    BorderSide(color: Colors.white),
-                  ),
-                ),
-                child: Icon(Icons.exposure_plus_1),
-              ),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
