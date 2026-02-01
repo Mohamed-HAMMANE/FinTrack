@@ -12,6 +12,8 @@ import 'Charts.dart';
 import 'Expense.dart';
 import 'Expenses.dart';
 import 'QuickAddSheet.dart';
+import 'Settings.dart';
+import '../Helpers/SyncHelper.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -25,6 +27,7 @@ class _HomeState extends State<Home> {
   List<Expense> _expenses = [];
   bool _isLoading = true;
   bool _showSaving = false;
+  bool _isSyncing = false;
 
   final LocalAuthentication auth = LocalAuthentication();
 
@@ -157,6 +160,20 @@ class _HomeState extends State<Home> {
           ],
         ),
         actions: [
+          IconButton(
+            onPressed: _isSyncing ? null : _handleQuickSync,
+            icon: _isSyncing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.sync),
+            tooltip: 'Quick Sync to Web App',
+          ),
           PopupMenuButton<String>(
             onSelected: (String result) async {
               if (result == 'Backup') {
@@ -181,13 +198,19 @@ class _HomeState extends State<Home> {
                         CategoryExpensePieChart(_selectedDate),
                   ),
                 );
+              } else if (result == 'Sync') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const Settings()),
+                );
               }
             },
             itemBuilder: (BuildContext context) => [
               PopupMenuItem(value: 'Categories', child: Text('Categories')),
               //PopupMenuItem(value: 'Charts', child: Text('Charts')),
-              PopupMenuItem(value: 'Backup', child: Text('Backup')),
-              PopupMenuItem(value: 'Restore', child: Text('Restore')),
+              PopupMenuItem(value: 'Sync', child: Text('Cloud Sync')),
+              PopupMenuItem(value: 'Backup', child: Text('Local Backup')),
+              PopupMenuItem(value: 'Restore', child: Text('Local Restore')),
             ],
           ),
         ],
@@ -715,6 +738,22 @@ class _HomeState extends State<Home> {
         _selectedDate = pickedDate;
       });
       _fetchExpenses();
+    }
+  }
+
+  Future<void> _handleQuickSync() async {
+    setState(() {
+      _isSyncing = true;
+    });
+
+    final success = await SyncHelper.syncWithSavedIp();
+
+    setState(() {
+      _isSyncing = false;
+    });
+
+    if (success) {
+      Func.showToast('Cloud Sync Successful!');
     }
   }
 }
