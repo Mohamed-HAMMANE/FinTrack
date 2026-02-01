@@ -69,6 +69,11 @@ class Shortcut {
 
     // Me
     const Shortcut(categoryName: 'Me', comment: 'Coffee ☕️', amount: -5.0),
+    const Shortcut(
+      categoryName: 'Me',
+      comment: 'Coffee capsules',
+      amount: -65.0,
+    ),
     const Shortcut(categoryName: 'Me', comment: 'Breakfast', amount: -13.0),
     const Shortcut(categoryName: 'Me', comment: 'Lunch', amount: -40.0),
 
@@ -87,7 +92,7 @@ class Shortcut {
     const Shortcut(
       categoryName: 'Bank',
       comment: 'Self-Transfer: Personal Reimbursement',
-      amount: -8.25,
+      amount: -16.5,
     ),
     const Shortcut(
       categoryName: 'Bank',
@@ -116,12 +121,13 @@ class Shortcut {
     const Shortcut(
       categoryName: 'Cell Phone',
       comment: 'Subscription',
-      amount: -74.25,
+      amount: -89.25,
     ),
 
     // Work (Income)
     const Shortcut(categoryName: 'Work', comment: 'Salary', amount: 10546.26),
     const Shortcut(categoryName: 'Work', comment: 'Bonus', amount: 1840.0),
+    const Shortcut(categoryName: 'Work', comment: 'Bonus', amount: 2400.0),
 
     // Wifi
     const Shortcut(categoryName: 'Wifi', comment: 'Bill', amount: -375.0),
