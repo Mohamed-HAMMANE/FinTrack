@@ -37,9 +37,9 @@ class _SettingsState extends State<Settings> {
   }
 
   Future<void> _handleSync() async {
-    final ip = _ipController.text.trim();
-    if (ip.isEmpty) {
-      Func.showToast('Please enter the computer IP', type: 'error');
+    final serverUrl = _ipController.text.trim();
+    if (serverUrl.isEmpty) {
+      Func.showToast('Please enter the server URL', type: 'error');
       return;
     }
 
@@ -49,7 +49,7 @@ class _SettingsState extends State<Settings> {
     });
 
     await _saveSettings();
-    final success = await SyncHelper.syncDatabase(ip);
+    final success = await SyncHelper.syncDatabase(serverUrl);
 
     setState(() {
       _isSyncing = false;
@@ -59,7 +59,7 @@ class _SettingsState extends State<Settings> {
     if (success) {
       Func.showToast('Database synced successfully!');
     } else {
-      Func.showToast('Sync failed. Check IP and server status.', type: 'error');
+      Func.showToast('Sync failed. Check URL and server status.', type: 'error');
     }
   }
 
@@ -80,19 +80,19 @@ class _SettingsState extends State<Settings> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Enter your computer IP address to upload the local database to your web app.',
+                  'Enter your server root URL to upload the local database to your web app.',
                   style: TextStyle(color: Colors.grey),
                 ),
                 const SizedBox(height: 20),
                 TextField(
                   controller: _ipController,
                   decoration: const InputDecoration(
-                    labelText: 'Computer IP Address',
-                    hintText: 'e.g. 192.168.1.15',
+                    labelText: 'Server Root URL',
+                    hintText: 'e.g. http://localhost:3020',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.computer),
                   ),
-                  keyboardType: TextInputType.number,
+                  keyboardType: TextInputType.url,
                 ),
                 const SizedBox(height: 20),
                 SizedBox(
